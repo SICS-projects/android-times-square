@@ -638,9 +638,10 @@ public class CalendarPickerView extends ListView {
       case RANGE:
         if (selectedCals.size() > 1) {
           // We've already got a range selected: clear the old one.
-          clearOldSelections();
-        } else if (selectedCals.size() == 1 && newlySelectedCal.before(selectedCals.get(0))) {
-          // We're moving the start of the range back in time: clear the old start date.
+          if (selectedCals.get(0).equals(selectedCals.get(1))){
+            selectedCals.remove(1);
+            return false;
+          }
           clearOldSelections();
         }
         break;
@@ -661,35 +662,54 @@ public class CalendarPickerView extends ListView {
       if (selectedCells.size() == 0 || !selectedCells.get(0).equals(cell)) {
         selectedCells.add(cell);
         cell.setSelected(true);
-      }
-      selectedCals.add(newlySelectedCal);
 
-      if (selectionMode == SelectionMode.RANGE && selectedCells.size() > 1) {
-        // Select all days in between start and end.
-        Date start = selectedCells.get(0).getDate();
-        Date end = selectedCells.get(1).getDate();
-        selectedCells.get(0).setRangeState(MonthCellDescriptor.RangeState.FIRST);
-        selectedCells.get(1).setRangeState(MonthCellDescriptor.RangeState.LAST);
-
-        for (List<List<MonthCellDescriptor>> month : cells) {
-          for (List<MonthCellDescriptor> week : month) {
-            for (MonthCellDescriptor singleCell : week) {
-              if (singleCell.getDate().after(start)
-                  && singleCell.getDate().before(end)
-                  && singleCell.isSelectable()) {
-                singleCell.setSelected(true);
-                singleCell.setRangeState(MonthCellDescriptor.RangeState.MIDDLE);
-                selectedCells.add(singleCell);
-              }
-            }
-          }
-        }
+        selectedCals.add(newlySelectedCal);
       }
+
+      selectDates();
     }
 
     // Update the adapter.
     validateAndUpdate();
     return date != null;
+  }
+
+  private void selectDates(){
+    Date start = null;
+    Date end = null;
+
+    if (selectionMode == SelectionMode.RANGE && selectedCells.size() > 1) {
+      // Select all days in between start and end.
+      if (selectedCells.get(0).getDate().before(selectedCells.get(1).getDate())){
+        start = selectedCells.get(0).getDate();
+        end = selectedCells.get(1).getDate();
+
+        selectedCells.get(0).setRangeState(MonthCellDescriptor.RangeState.FIRST);
+        selectedCells.get(1).setRangeState(MonthCellDescriptor.RangeState.LAST);
+      } else if (selectedCells.get(1).getDate().before(selectedCells.get(0).getDate())){
+        start = selectedCells.get(1).getDate();
+        end = selectedCells.get(0).getDate();
+
+        selectedCells.get(1).setRangeState(MonthCellDescriptor.RangeState.FIRST);
+        selectedCells.get(0).setRangeState(MonthCellDescriptor.RangeState.LAST);
+      } else {
+        throw new IllegalStateException("Startcell and Endcell cannot be the same");
+      }
+
+      for (List<List<MonthCellDescriptor>> month : cells) {
+        for (List<MonthCellDescriptor> week : month) {
+          for (MonthCellDescriptor singleCell : week) {
+            if (singleCell.getDate().after(start)
+                    && singleCell.getDate().before(end)
+                    && singleCell.isSelectable()) {
+              singleCell.setSelected(true);
+              singleCell.setRangeState(MonthCellDescriptor.RangeState.MIDDLE);
+              selectedCells.add(singleCell);
+            }
+          }
+        }
+      }
+    }
   }
 
   private void clearOldSelections() {

@@ -496,7 +496,9 @@ public class CalendarPickerViewTest {
 
     // Only Nov 24 is selected: going backward should start a new range.
     view.selectDate(nov20.getTime());
-    assertOneDateSelected();
+    assertThat(view.selectedCals).hasSize(2);
+    assertThat(view.selectedCells).hasSize(5);
+    assertThat(view.getSelectedDates()).hasSize(5);
   }
 
   @Test public void testRangeWithTwoInitialSelections() throws Exception {
